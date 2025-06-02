@@ -3,6 +3,12 @@
 https://difains.github.io/ath-Rewards-Calculator/
 
 # update
+### 25-06-02  14:55
+- 배수 선택 삭제
+- 계산시 2배수만 적용
+- 코인 시세 API 실시간 연동
+
+# update
 ### 25-05-27 17:07
 - 결과보기 카드 UI -> Grid UI로 전환
 - 항목들을 추가하여 grid 에 추가 가능
