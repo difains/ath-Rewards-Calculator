@@ -23,7 +23,11 @@
 
                 <div class="input-group">
                     <label for="coinPrice">코인 현재 시세 (원):</label>
-                    <input type="number" id="coinPrice" name="coinPrice" step="0.01" placeholder="예: 100.50" required>
+                    <div class="price-input-group">
+                        <input type="number" id="coinPrice" name="coinPrice" step="0.01" placeholder="예: 100.50" required>
+                        <button type="button" id="fetchPriceBtn" class="fetch-price-btn">📈 시세 불러오기</button>
+                    </div>
+                    <div id="priceStatus" class="price-status"></div>
                 </div>
 
                 <div class="input-group">
@@ -41,12 +45,8 @@
                     <input type="number" id="productPrice" name="productPrice" placeholder="예: 50000" required>
                 </div>
 
-                <div class="input-group">
-                    <label for="premiumMultiplier">프리미엄 배수:</label>
-                    <select id="premiumMultiplier" name="premiumMultiplier" required>
-                        <option value="1.5">1.5배</option>
-                        <option value="2">2배</option>
-                    </select>
+                <div class="premium-info">
+                    <span class="premium-badge">프리미엄 2배 적용</span>
                 </div>
 
                 <div class="button-group">
@@ -75,7 +75,6 @@
                     <div class="grid-cell">코인리워드</div>
                     <div class="grid-cell">상품가격</div>
                     <div class="grid-cell">코인시세</div>
-                    <div class="grid-cell">프리미엄배수</div>
                     <div class="grid-cell">총받는코인</div>
                     <div class="grid-cell">현재가치</div>
                     <div class="grid-cell">수익률</div>

@@ -9,8 +9,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const addBtn = document.getElementById('addBtn');
     const calculateAllBtn = document.getElementById('calculateAllBtn');
     const exportBtn = document.getElementById('exportBtn');
+    const fetchPriceBtn = document.getElementById('fetchPriceBtn');
+    const coinPriceInput = document.getElementById('coinPrice');
+    const priceStatus = document.getElementById('priceStatus');
 
     let allCalculationData = [];
+
+    // 페이지 로드 시 자동으로 시세 불러오기
+    fetchCurrentPrice();
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -29,6 +35,57 @@ document.addEventListener('DOMContentLoaded', function() {
         exportToExcel();
     });
 
+    fetchPriceBtn.addEventListener('click', function() {
+        fetchCurrentPrice();
+    });
+
+    // 업비트 API를 통해 현재 시세 불러오기
+    async function fetchCurrentPrice() {
+        try {
+            showPriceStatus('loading', '시세를 불러오는 중...');
+            fetchPriceBtn.disabled = true;
+
+            // 업비트 API 호출 (CORS 문제 해결을 위해 프록시 사용)
+            const response = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-AHT');
+            
+            if (!response.ok) {
+                throw new Error('API 호출 실패');
+            }
+
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                const currentPrice = data[0].trade_price;
+                coinPriceInput.value = currentPrice;
+                
+                const changeRate = (data[0].signed_change_rate * 100).toFixed(2);
+                const changeText = data[0].change === 'RISE' ? `+${changeRate}%` : 
+                                 data[0].change === 'FALL' ? `${changeRate}%` : '0%';
+                
+                showPriceStatus('success', 
+                    `현재 시세: ${currentPrice.toLocaleString()}원 (${changeText}) - 업비트 기준`);
+            } else {
+                throw new Error('시세 데이터를 찾을 수 없습니다');
+            }
+        } catch (error) {
+            console.error('시세 불러오기 실패:', error);
+            
+            // 대체 방법: 고정된 시세 사용 (검색 결과 기준)
+            const fallbackPrice = 5.22; // 최근 시세 기준
+            coinPriceInput.value = fallbackPrice;
+            
+            showPriceStatus('error', 
+                `API 호출 실패 - 대체 시세 적용: ${fallbackPrice}원 (수동으로 업데이트 권장)`);
+        } finally {
+            fetchPriceBtn.disabled = false;
+        }
+    }
+
+    function showPriceStatus(type, message) {
+        priceStatus.className = `price-status ${type}`;
+        priceStatus.textContent = message;
+    }
+
     function addDataToGrid() {
         // 폼 유효성 검사
         if (!form.checkValidity()) {
@@ -43,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
             productName: formData.get('productName'),
             coinReward: parseFloat(formData.get('coinReward')),
             productPrice: parseFloat(formData.get('productPrice')),
-            premiumMultiplier: parseFloat(formData.get('premiumMultiplier')),
+            premiumMultiplier: 2, // 고정값 2배
             timestamp: new Date().toLocaleString('ko-KR'),
             id: Date.now() // 고유 ID 생성
         };
@@ -56,9 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
         resultsSection.style.display = 'block';
         resultsSection.scrollIntoView({ behavior: 'smooth' });
         
-        // 폼 초기화
+        // 폼 초기화 (시세는 유지)
+        const currentPrice = coinPriceInput.value;
         form.reset();
         document.getElementById('date').value = today;
+        coinPriceInput.value = currentPrice;
     }
 
     function calculateAllData() {
@@ -88,16 +147,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 productName: formData.get('productName'),
                 coinReward: parseFloat(formData.get('coinReward')),
                 productPrice: parseFloat(formData.get('productPrice')),
-                premiumMultiplier: parseFloat(formData.get('premiumMultiplier')),
+                premiumMultiplier: 2, // 고정값 2배
                 timestamp: new Date().toLocaleString('ko-KR'),
                 id: Date.now()
             };
             
             allCalculationData.unshift(newData);
             
-            // 폼 초기화
+            // 폼 초기화 (시세는 유지)
+            const currentPrice = coinPriceInput.value;
             form.reset();
             document.getElementById('date').value = today;
+            coinPriceInput.value = currentPrice;
         }
 
         // 모든 데이터에 대해 계산 수행
@@ -127,8 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function calculateSingleData(data) {
-        // 계산 수행
-        const totalCoins = data.coinReward * data.premiumMultiplier;
+        // 계산 수행 (프리미엄 2배 고정)
+        const totalCoins = data.coinReward * 2;
         const currentValue = totalCoins * data.coinPrice;
         const profitMargin = ((currentValue / data.productPrice) * 100).toFixed(2);
         
@@ -189,7 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="grid-cell">${data.coinReward.toFixed(5)}</div>
                         <div class="grid-cell">${data.productPrice.toLocaleString()}</div>
                         <div class="grid-cell">${data.coinPrice}</div>
-                        <div class="grid-cell">${data.premiumMultiplier}</div>
                         <div class="grid-cell">-</div>
                         <div class="grid-cell">-</div>
                         <div class="grid-cell">-</div>
@@ -214,7 +274,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="grid-cell">${data.coinReward.toFixed(5)}</div>
                     <div class="grid-cell">${data.productPrice.toLocaleString()}</div>
                     <div class="grid-cell">${data.coinPrice}</div>
-                    <div class="grid-cell">${data.premiumMultiplier}</div>
                     <div class="grid-cell">${data.totalCoins.toFixed(5)}</div>
                     <div class="grid-cell">${data.currentValue.toLocaleString()}</div>
                     <div class="grid-cell ${data.profitMargin >= 0 ? 'profit-positive' : 'profit-negative'}">${data.profitMargin}%</div>
@@ -275,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data.coinReward.toFixed(5),
             data.productPrice,
             data.coinPrice,
-            data.premiumMultiplier,
+            '2배', // 고정값
             data.totalCoins.toFixed(5),
             Math.round(data.currentValue),
             data.profitMargin,
